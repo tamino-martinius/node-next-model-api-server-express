@@ -1,6 +1,6 @@
 'use strict';
 
-const NextModelApiServerConnector = require('..');
+const NextModelApiServerExpress = require('..');
 const NextModel = require('next-model');
 const expect = require('expect.js');
 const expectChange = require('expect-change');
@@ -14,9 +14,6 @@ const includes = lodash.includes;
 const words = lodash.words;
 
 def('BaseModel', () => class BaseModel extends NextModel {
-  // static get connector() {
-  //   return NextModelApiServerConnector;
-  // }
 });
 
 def('User', () => class User extends $BaseModel {

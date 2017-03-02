@@ -8,7 +8,7 @@ const compact = lodash.compact;
 const isArray = lodash.isArray;
 const toLower = lodash.toLower;
 
-module.exports = class NextModelApiServerConnector {
+module.exports = class NextModelApiServerExpress {
   constructor(app, Klass) {
     this.app = app;
     this.Klass = Klass;
