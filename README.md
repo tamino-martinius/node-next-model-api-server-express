@@ -17,9 +17,10 @@ See [GitHub project](https://github.com/tamino-martinius/node-next-model-api-ser
 
 * Fix Typos
 * Add **user credentials** to queries
+* Settings to configure **cors** headers
 * Add more **examples**
 * Add **exists**, **join** and **subqueries**
-* There are already some **tests**, but not every test case is covered.
+* There are already some **tests**, but not every test case is covered
 
 ## TOC
 
