@@ -8,6 +8,7 @@ const assign = lodash.assign;
 const defaults = lodash.defaults;
 const filter = lodash.filter;
 const isArray = lodash.isArray;
+const map = lodash.map;
 const omit = lodash.omit;
 
 module.exports = class NextModelApiServerExpress {
@@ -40,7 +41,7 @@ module.exports = class NextModelApiServerExpress {
   static handleData(res, data) {
     let content = data;
     if (isArray(data)) {
-      content = data.map(item => item.attributes);
+      content = map(data, 'attributes');
     } else if (data && data.attributes) {
       content = data.attributes;
     }
