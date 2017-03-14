@@ -103,7 +103,23 @@ module.exports = class NextModelApiServerExpress {
     app.use(this.root, this.constructor.responseHeaders);
   }
 
-  defaultActions(Klass) {
+
+  controller(Klass, actionsParam) {
+    const router = express.Router();
+    const actions = defaults(actionsParam, this._defaultActions(Klass));
+    for (const route of this._routesForClass(Klass)) {
+      const action = actions[route.action];
+      if (action) {
+        router.route(route.url)[route.method](action);
+      } else {
+        console.log(`can't find action '${action}' for model '${Klass.modelName}'`);
+      }
+    }
+    this.app.use(this.root, router);
+    return router;
+  }
+
+  _defaultActions(Klass) {
     return {
       all: (req, res) => {
         this.constructor.respond(res,
@@ -151,21 +167,7 @@ module.exports = class NextModelApiServerExpress {
     };
   }
 
-  controller(Klass, actionsParam) {
-    const router = express.Router();
-    const actions = defaults(actionsParam, this.defaultActions(Klass));
-    for (const route of this.routesForClass(Klass)) {
-      const action = actions[route.action];
-      if (action) {
-        router.route(route.url)[route.method](action);
-      } else {
-        console.log(`can't find action '${action}' for model '${Klass.modelName}'`);
-      }
-    }
-    this.app.use(this.root, router);
-  }
-
-  routesForClass(Klass) {
+  _routesForClass(Klass) {
     return filter(this.routes, (route) => (
       route.modelName === Klass.modelName
     ));
