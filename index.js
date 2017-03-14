@@ -59,19 +59,27 @@ module.exports = class NextModelApiServerExpress {
     const data = this.payload(req);
     return class ScopedKlass extends Klass {
       static get defaultScope() {
-        return JSON.parse(data.scope);
+        if (data && data.scope) {
+          return JSON.parse(data.scope);
+        }
       }
 
       static get defaultOrder() {
-        return JSON.parse(data.order);
+        if (data && data.order) {
+          return JSON.parse(data.order);
+        }
       }
 
       static get _skip() {
-        return JSON.parse(data.skip);
+        if (data && data.skip) {
+          return JSON.parse(data.skip);
+        }
       }
 
       static get _limit() {
-        return JSON.parse(data.limit);
+        if (data && data.limit) {
+          return JSON.parse(data.limit);
+        }
       }
     };
   }
