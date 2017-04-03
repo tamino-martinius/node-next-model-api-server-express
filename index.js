@@ -8,6 +8,7 @@ const assign = lodash.assign;
 const defaults = lodash.defaults;
 const filter = lodash.filter;
 const isArray = lodash.isArray;
+const isNumber = lodash.isNumber;
 const map = lodash.map;
 const omit = lodash.omit;
 
@@ -45,20 +46,24 @@ module.exports = class NextModelApiServerExpress {
     } else if (data && data.attributes) {
       content = data.attributes;
     }
+    if (isNumber(data)) {
+      content = data.toString();
+    }
     res.json(content);
   }
 
   static handleError(res, err) {
-    res.json({ err: err });
+    console.dir(err);
+    res.json({ err });
   }
 
   static payload(req) {
     return assign({}, req.params, req.body, req.query);
   }
 
-  static scopedKlass(Klass, req) {
+  static scopedKlass(Klass, route, req) {
     const data = this.payload(req);
-    return class ScopedKlass extends Klass {
+    const ScopedKlass =  class ScopedKlass extends Klass {
       static get defaultScope() {
         if (data && data.scope) {
           return JSON.parse(data.scope);
@@ -70,30 +75,27 @@ module.exports = class NextModelApiServerExpress {
           return JSON.parse(data.order);
         }
       }
-
-      static get _skip() {
-        if (data && data.skip) {
-          return JSON.parse(data.skip);
-        }
-      }
-
-      static get _limit() {
-        if (data && data.limit) {
-          return JSON.parse(data.limit);
-        }
-      }
     };
+
+    if (data) {
+      if (data.skip) ScopedKlass._skip = JSON.parse(data.skip);
+      if (data.limit) ScopedKlass._limit = JSON.parse(data.limit);
+    }
+
+    return ScopedKlass;
   }
 
-  static klass(Klass, req) {
-    const data = JSON.parse(this.payload(req).attributes);
-    const identifier = Klass.identifier;
+  static klassPromise(Klass, route, req) {
+    const data = this.payload(req);
+    const attributes = JSON.parse(data.attributes || '{}');
+    const identifier = route.identifier;
     if (data[identifier]) {
-      const query = { [identifier]: data[identifier] };
+      const query = { [identifier]: JSON.parse(data[identifier]) };
+      console.log(query);
       return Klass.model.where(query).first
-       .then(klass => klass.assign(omit(data, identifier)));
+       .then(klass => klass.assign(omit(attributes, identifier)));
     } else {
-      return Klass.model.promiseBuild(data);
+      return Klass.model.promiseBuild(attributes);
     }
   }
 
@@ -111,7 +113,15 @@ module.exports = class NextModelApiServerExpress {
     for (const route of this._routesForClass(Klass)) {
       const action = actions[route.action];
       if (action) {
-        router.route(route.url)[route.method](action);
+        const handler = (req, res) => {
+          const scopedKlass = this.constructor.scopedKlass(Klass, route, req);
+          let klassPromise;
+          if (route.type === 'member') {
+            klassPromise = this.constructor.klassPromise(Klass, route, req);
+          }
+          return action(scopedKlass, klassPromise, req, res);
+        };
+        router.route(route.url)[route.method](handler);
       } else {
         console.log(`can't find action '${action}' for model '${Klass.modelName}'`);
       }
@@ -122,48 +132,29 @@ module.exports = class NextModelApiServerExpress {
 
   _defaultActions(Klass) {
     return {
-      all: (req, res) => {
-        this.constructor.respond(res,
-          this.constructor.scopedKlass(Klass, req).all
-        );
+      all: (scopedKlass, klassPromise, req, res) => {
+        this.constructor.respond(res, scopedKlass.all);
       },
-      first: (req, res) => {
-        this.constructor.respond(res,
-          this.constructor.scopedKlass(Klass, req).first
-        );
+      first: (scopedKlass, klassPromise, req, res) => {
+        this.constructor.respond(res, scopedKlass.first);
       },
-      last: (req, res) => {
-        this.constructor.respond(res,
-          this.constructor.scopedKlass(Klass, req).last
-        );
+      last: (scopedKlass, klassPromise, req, res) => {
+        this.constructor.respond(res, scopedKlass.last);
       },
-      count: (req, res) => {
-        this.constructor.respond(res,
-          this.constructor.scopedKlass(Klass, req).count
-        );
+      count: (scopedKlass, klassPromise, req, res) => {
+        this.constructor.respond(res, scopedKlass.count);
       },
-      create: (req, res) => {
-        this.constructor.respond(res,
-          this.constructor.klass(Klass, req)
-          .then(klass => klass.save())
-        );
+      create: (scopedKlass, klassPromise, req, res) => {
+        this.constructor.respond(res, klassPromise.then(klass => klass.save()));
       },
-      show: (req, res) => {
-        this.constructor.respond(res,
-          this.constructor.klass(Klass, req)
-        );
+      show: (scopedKlass, klassPromise, req, res) => {
+        this.constructor.respond(res, klassPromise(Klass, req));
       },
-      update: (req, res) => {
-        this.constructor.respond(res,
-          this.constructor.klass(Klass, req)
-          .then(klass => klass.save())
-        );
+      update: (scopedKlass, klassPromise, req, res) => {
+        this.constructor.respond(res, klassPromise.then(klass => klass.save()));
       },
-      delete: (req, res) => {
-        this.constructor.respond(res,
-          this.constructor.klass(Klass, req)
-          .then(klass => klass.delete())
-        );
+      delete: (scopedKlass, klassPromise, req, res) => {
+        this.constructor.respond(res, klassPromise.then(klass => klass.delete()));
       },
     };
   }
