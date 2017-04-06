@@ -1,6 +1,6 @@
 # NextModelApiServerExpress
 
-Api Server for [ApiClient](https://github.com/tamino-martinius/node-next-model-api-client-express) using [NextModel](https://github.com/tamino-martinius/node-next-model) package.
+Api Server for [ApiClient](https://github.com/tamino-martinius/node-next-model-api-client-connector) using [NextModel](https://github.com/tamino-martinius/node-next-model) package.
 
  [![Build Status](https://travis-ci.org/tamino-martinius/node-next-model-api-server-express.svg?branch=master)](https://travis-ci.org/tamino-martinius/node-next-model-api-server-express)
 
@@ -248,4 +248,4 @@ delete : DELETE /user/:id/delete
 
 See [history](HISTORY.md) for more details.
 
-* `0.1.0` **2017-03-??** First release compatible with NextModel 0.4.0
+* `0.1.0` **2017-04-05 First public release

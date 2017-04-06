@@ -53,8 +53,7 @@ module.exports = class NextModelApiServerExpress {
   }
 
   static handleError(res, err) {
-    console.dir(err);
-    res.json({ err });
+    res.json({ err: err.message });
   }
 
   static payload(req) {
@@ -88,12 +87,15 @@ module.exports = class NextModelApiServerExpress {
   static klassPromise(Klass, route, req) {
     const data = this.payload(req);
     const attributes = JSON.parse(data.attributes || '{}');
-    const identifier = route.identifier;
-    if (data[identifier]) {
-      const query = { [identifier]: JSON.parse(data[identifier]) };
-      console.log(query);
+    if (data[route.identifier]) {
+      const query = { [Klass.identifier]: JSON.parse(data[route.identifier]) };
       return Klass.model.where(query).first
-       .then(klass => klass.assign(omit(attributes, identifier)));
+       .then(klass => {
+         if (klass) {
+           return klass.assign(omit(attributes, Klass.identifier));
+         }
+         throw new Error('Item not found');
+       });
     } else {
       return Klass.model.promiseBuild(attributes);
     }
@@ -116,7 +118,7 @@ module.exports = class NextModelApiServerExpress {
         const handler = (req, res) => {
           const scopedKlass = this.constructor.scopedKlass(Klass, route, req);
           let klassPromise;
-          if (route.type === 'member') {
+          if (route.type === 'member' || route.action === 'create') {
             klassPromise = this.constructor.klassPromise(Klass, route, req);
           }
           return action(scopedKlass, klassPromise, req, res);
@@ -148,7 +150,7 @@ module.exports = class NextModelApiServerExpress {
         this.constructor.respond(res, klassPromise.then(klass => klass.save()));
       },
       show: (scopedKlass, klassPromise, req, res) => {
-        this.constructor.respond(res, klassPromise(Klass, req));
+        this.constructor.respond(res, klassPromise);
       },
       update: (scopedKlass, klassPromise, req, res) => {
         this.constructor.respond(res, klassPromise.then(klass => klass.save()));
