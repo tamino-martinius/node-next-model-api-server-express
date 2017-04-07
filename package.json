@@ -1,5 +1,5 @@
 {
-  "name": "next-model-api-express-server",
+  "name": "next-model-api-server-express",
   "version": "0.1.0",
   "description": "Express server for next-model api.",
   "author": "Tamino Martinius <dev@zaku.eu>",
